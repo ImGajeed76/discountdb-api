@@ -131,7 +131,7 @@ definitions:
       id:
         type: integer
     type: object
-host: https://api.discountdb.data-view.ch
+host: api.discountdb.data-view.ch
 info:
   contact: {}
   description: This is the DiscountDB API documentation

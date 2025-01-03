@@ -7,7 +7,7 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "https://api.discountdb.data-view.ch",
+    "host": "api.discountdb.data-view.ch",
     "basePath": "/api/v1",
     "paths": {
         "/coupons/merchants": {

@@ -19,7 +19,7 @@ import (
 // @version 1.0
 // @description This is the DiscountDB API documentation
 // @termsOfService http://swagger.io/terms/
-// @host https://api.discountdb.data-view.ch
+// @host api.discountdb.data-view.ch
 // @BasePath /api/v1
 func main() {
 	// Load configuration

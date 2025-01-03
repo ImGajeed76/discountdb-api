@@ -421,7 +421,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "https://api.discountdb.data-view.ch",
+	Host:             "api.discountdb.data-view.ch",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
 	Title:            "DiscountDB API",
