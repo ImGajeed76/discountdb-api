@@ -139,7 +139,36 @@ info:
   title: DiscountDB API
   version: "1.0"
 paths:
-  /coupons:
+  /coupons/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single coupon by its ID
+      parameters:
+      - description: Coupon ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Coupon'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get coupon by ID
+      tags:
+      - coupons
+  /coupons/search:
     get:
       consumes:
       - application/json
@@ -187,35 +216,6 @@ paths:
           schema:
             $ref: '#/definitions/models.ErrorResponse'
       summary: Get coupons with filtering and pagination
-      tags:
-      - coupons
-  /coupons/{id}:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve a single coupon by its ID
-      parameters:
-      - description: Coupon ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Coupon'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-      summary: Get coupon by ID
       tags:
       - coupons
   /health:

@@ -8,6 +8,7 @@ import (
 	"discountdb-api/internal/routes"
 	"github.com/gofiber/contrib/swagger"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/redis/go-redis/v9"
 	"log"
@@ -72,6 +73,10 @@ func main() {
 		Window:    time.Minute,
 		Redis:     rdb,
 		KeyPrefix: "ratelimit:",
+	}))
+
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "*",
 	}))
 
 	routes.SetupRoutes(app, db, rdb)

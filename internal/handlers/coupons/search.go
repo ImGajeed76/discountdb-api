@@ -84,7 +84,7 @@ func isValidSortBy(s repositorys.SortBy) bool {
 // @Success 200 {object} models.CouponsSearchResponse
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
-// @Router /coupons [get]
+// @Router /coupons/search [get]
 func GetCoupons(c *fiber.Ctx, couponRepo *repositorys.CouponRepository, rdb *redis.Client) error {
 	// Get url parameters
 	params, err := ParseSearchParams(c)

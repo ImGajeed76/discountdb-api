@@ -16,7 +16,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/coupons": {
+        "/coupons/search": {
             "get": {
                 "description": "Retrieve a list of coupons with optional search, sorting, and pagination",
                 "consumes": [

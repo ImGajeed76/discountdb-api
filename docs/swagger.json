@@ -10,7 +10,7 @@
     "host": "localhost:3000",
     "basePath": "/api/v1",
     "paths": {
-        "/coupons": {
+        "/coupons/search": {
             "get": {
                 "description": "Retrieve a list of coupons with optional search, sorting, and pagination",
                 "consumes": [
