@@ -1,0 +1,44 @@
+package config
+
+import (
+	"fmt"
+	"github.com/joho/godotenv"
+	"os"
+)
+
+type Config struct {
+	DBHost     string
+	DBPort     string
+	DBUser     string
+	DBPassword string
+	DBName     string
+	DBSSLMode  string
+
+	REDISHost     string
+	REDISPort     string
+	REDISUser     string
+	REDISPassword string
+}
+
+func LoadConfig() (*Config, error) {
+	err := godotenv.Load()
+	if err != nil {
+		return nil, fmt.Errorf("error loading .env file: %w", err)
+	}
+
+	config := &Config{
+		DBHost:     os.Getenv("DB_HOST"),
+		DBPort:     os.Getenv("DB_PORT"),
+		DBUser:     os.Getenv("DB_USERNAME"),
+		DBPassword: os.Getenv("DB_PASSWORD"),
+		DBName:     os.Getenv("DB_DATABASE"),
+		DBSSLMode:  os.Getenv("DB_SSL_MODE"),
+
+		REDISHost:     os.Getenv("REDIS_HOST"),
+		REDISPort:     os.Getenv("REDIS_PORT"),
+		REDISUser:     os.Getenv("REDIS_USERNAME"),
+		REDISPassword: os.Getenv("REDIS_PASSWORD"),
+	}
+
+	return config, nil
+}
