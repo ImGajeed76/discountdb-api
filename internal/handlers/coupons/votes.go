@@ -25,7 +25,7 @@ type VoteQueue struct {
 // @Param vote body models.VoteBody true "Vote body"
 // @Success 200
 // @Failure 400 {object} models.ErrorResponse
-// @Router /vote [post]
+// @Router /coupons/vote [post]
 func PostVote(c *fiber.Ctx, rdb *redis.Client) error {
 
 	var vote models.VoteBody

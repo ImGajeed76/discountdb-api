@@ -16,7 +16,7 @@ import (
 // @Produce json
 // @Success 200 {object} models.MerchantResponse
 // @Failure 500 {object} models.ErrorResponse
-// @Router /merchants [get]
+// @Router /coupons/merchants [get]
 func GetMerchants(c *fiber.Ctx, couponRepo *repositorys.CouponRepository, rdb *redis.Client) error {
 	// redis cache
 	key := "merchants"

@@ -19,7 +19,7 @@ import (
 // @version 1.0
 // @description This is the DiscountDB API documentation
 // @termsOfService http://swagger.io/terms/
-// @host localhost:3000
+// @host https://discountdb-api-i4ftr.ondigitalocean.app/
 // @BasePath /api/v1
 func main() {
 	// Load configuration
