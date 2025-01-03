@@ -131,7 +131,7 @@ definitions:
       id:
         type: integer
     type: object
-host: localhost:3000
+host: https://api.discountdb.data-view.ch
 info:
   contact: {}
   description: This is the DiscountDB API documentation
@@ -168,6 +168,23 @@ paths:
       summary: Get coupon by ID
       tags:
       - coupons
+  /coupons/merchants:
+    get:
+      description: Retrieve a list of all merchants
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MerchantResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get all merchants
+      tags:
+      - merchants
   /coupons/search:
     get:
       consumes:
@@ -218,43 +235,7 @@ paths:
       summary: Get coupons with filtering and pagination
       tags:
       - coupons
-  /health:
-    get:
-      consumes:
-      - application/json
-      description: Get API health status
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.HealthCheckResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-      summary: Health check endpoint
-      tags:
-      - health
-  /merchants:
-    get:
-      description: Retrieve a list of all merchants
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.MerchantResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-      summary: Get all merchants
-      tags:
-      - merchants
-  /vote:
+  /coupons/vote:
     post:
       consumes:
       - application/json
@@ -278,4 +259,23 @@ paths:
       summary: Vote on a coupon
       tags:
       - votes
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Get API health status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.HealthCheckResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Health check endpoint
+      tags:
+      - health
 swagger: "2.0"

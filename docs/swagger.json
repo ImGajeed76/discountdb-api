@@ -7,9 +7,35 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "localhost:3000",
+    "host": "https://api.discountdb.data-view.ch",
     "basePath": "/api/v1",
     "paths": {
+        "/coupons/merchants": {
+            "get": {
+                "description": "Retrieve a list of all merchants",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "merchants"
+                ],
+                "summary": "Get all merchants",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.MerchantResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/coupons/search": {
             "get": {
                 "description": "Retrieve a list of coupons with optional search, sorting, and pagination",
@@ -75,6 +101,43 @@
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/coupons/vote": {
+            "post": {
+                "description": "Vote on a coupon by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "votes"
+                ],
+                "summary": "Vote on a coupon",
+                "parameters": [
+                    {
+                        "description": "Vote body",
+                        "name": "vote",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.VoteBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -148,69 +211,6 @@
                     },
                     "500": {
                         "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/merchants": {
-            "get": {
-                "description": "Retrieve a list of all merchants",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "merchants"
-                ],
-                "summary": "Get all merchants",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.MerchantResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/vote": {
-            "post": {
-                "description": "Vote on a coupon by ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "votes"
-                ],
-                "summary": "Vote on a coupon",
-                "parameters": [
-                    {
-                        "description": "Vote body",
-                        "name": "vote",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.VoteBody"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    },
-                    "400": {
-                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }

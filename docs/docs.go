@@ -16,6 +16,32 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/coupons/merchants": {
+            "get": {
+                "description": "Retrieve a list of all merchants",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "merchants"
+                ],
+                "summary": "Get all merchants",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.MerchantResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/coupons/search": {
             "get": {
                 "description": "Retrieve a list of coupons with optional search, sorting, and pagination",
@@ -81,6 +107,43 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/coupons/vote": {
+            "post": {
+                "description": "Vote on a coupon by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "votes"
+                ],
+                "summary": "Vote on a coupon",
+                "parameters": [
+                    {
+                        "description": "Vote body",
+                        "name": "vote",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.VoteBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -154,69 +217,6 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/merchants": {
-            "get": {
-                "description": "Retrieve a list of all merchants",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "merchants"
-                ],
-                "summary": "Get all merchants",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.MerchantResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/vote": {
-            "post": {
-                "description": "Vote on a coupon by ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "votes"
-                ],
-                "summary": "Vote on a coupon",
-                "parameters": [
-                    {
-                        "description": "Vote body",
-                        "name": "vote",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.VoteBody"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    },
-                    "400": {
-                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -421,7 +421,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:3000",
+	Host:             "https://api.discountdb.data-view.ch",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
 	Title:            "DiscountDB API",
