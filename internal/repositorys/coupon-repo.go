@@ -187,42 +187,74 @@ type SearchParams struct {
 func calculateScoreSQL() string {
 	return `
     (
-        SELECT COALESCE(
-            (
-                SELECT SUM(
+        -- Vote score component (from -1 to +1)
+        (
+            COALESCE(
+                (
+                    SELECT SUM(
+                        CASE 
+                            WHEN age < INTERVAL '1 day' THEN 1.0
+                            WHEN age < INTERVAL '1 week' THEN 0.8
+                            WHEN age < INTERVAL '1 month' THEN 0.6
+                            WHEN age < INTERVAL '6 months' THEN 0.4
+                            ELSE 0.2
+                        END
+                    )
+                    FROM (
+                        SELECT CURRENT_TIMESTAMP - unnest(up_votes) as age
+                        FROM coupons c2 
+                        WHERE c2.id = c1.id
+                    ) up
+                ), 0
+            ) -
+            COALESCE(
+                (
+                    SELECT SUM(
+                        CASE 
+                            WHEN age < INTERVAL '1 day' THEN 1.0
+                            WHEN age < INTERVAL '1 week' THEN 0.8
+                            WHEN age < INTERVAL '1 month' THEN 0.6
+                            WHEN age < INTERVAL '6 months' THEN 0.4
+                            ELSE 0.2
+                        END
+                    )
+                    FROM (
+                        SELECT CURRENT_TIMESTAMP - unnest(down_votes) as age
+                        FROM coupons c2 
+                        WHERE c2.id = c1.id
+                    ) down
+                ), 0
+            )
+        ) * 0.4 + -- 40% weight for votes
+        
+        -- Discount value component (normalized based on discount type)
+        (
+            CASE 
+                WHEN discount_type = 'PERCENTAGE_OFF' THEN 
+                    LEAST(discount_value / 100.0, 1.0)  -- Normalize percentage to 0-1
+                WHEN discount_type = 'FIXED_AMOUNT' THEN 
                     CASE 
-                        WHEN age < INTERVAL '1 day' THEN 1.0
-                        WHEN age < INTERVAL '1 week' THEN 0.8
-                        WHEN age < INTERVAL '1 month' THEN 0.6
-                        WHEN age < INTERVAL '6 months' THEN 0.4
-                        ELSE 0.2
+                        WHEN maximum_discount_amount > 0 THEN 
+                            LEAST(discount_value / maximum_discount_amount, 1.0)
+                        ELSE 
+                            LEAST(discount_value / 1000.0, 1.0)  -- Assume $1000 as max reference
                     END
-                )
-                FROM (
-                    SELECT CURRENT_TIMESTAMP - unnest(up_votes) as age
-                    FROM coupons c2 
-                    WHERE c2.id = c1.id
-                ) up
-            ), 0
-        ) -
-        COALESCE(
-            (
-                SELECT SUM(
-                    CASE 
-                        WHEN age < INTERVAL '1 day' THEN 1.0
-                        WHEN age < INTERVAL '1 week' THEN 0.8
-                        WHEN age < INTERVAL '1 month' THEN 0.6
-                        WHEN age < INTERVAL '6 months' THEN 0.4
-                        ELSE 0.2
-                    END
-                )
-                FROM (
-                    SELECT CURRENT_TIMESTAMP - unnest(down_votes) as age
-                    FROM coupons c2 
-                    WHERE c2.id = c1.id
-                ) down
-            ), 0
-        )
+                WHEN discount_type IN ('BOGO', 'FREE_SHIPPING') THEN 
+                    0.5  -- Fixed score for BOGO and FREE_SHIPPING
+            END
+        ) * 0.4 + -- 40% weight for discount value
+        
+        -- Freshness component (higher score for newer coupons)
+        (
+            CASE 
+                WHEN CURRENT_TIMESTAMP - created_at < INTERVAL '1 day' THEN 1.0
+                WHEN CURRENT_TIMESTAMP - created_at < INTERVAL '1 week' THEN 0.8
+                WHEN CURRENT_TIMESTAMP - created_at < INTERVAL '1 month' THEN 0.6
+                WHEN CURRENT_TIMESTAMP - created_at < INTERVAL '3 months' THEN 0.4
+                WHEN CURRENT_TIMESTAMP - created_at < INTERVAL '6 months' THEN 0.2
+                ELSE 0.1
+            END
+        ) * 0.2  -- 20% weight for freshness
     ) as score`
 }
 
