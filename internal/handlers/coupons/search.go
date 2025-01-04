@@ -44,6 +44,9 @@ func ParseSearchParams(c *fiber.Ctx) (repositorys.SearchParams, error) {
 		if limit < 1 {
 			return params, fmt.Errorf("limit must be greater than 0")
 		}
+		if limit > 100 {
+			return params, fmt.Errorf("limit must not exceed 100")
+		}
 		params.Limit = limit
 	}
 
