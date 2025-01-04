@@ -353,8 +353,9 @@ func (r *CouponRepository) Search(ctx context.Context, params SearchParams) ([]*
                 code ILIKE $%d OR
                 title ILIKE $%d OR
                 description ILIKE $%d OR
-                merchant_name ILIKE $%d
-            )`, paramCounter, paramCounter, paramCounter, paramCounter)
+                merchant_name ILIKE $%d OR
+				merchant_url ILIKE $%d
+            )`, paramCounter, paramCounter, paramCounter, paramCounter, paramCounter)
 		searchTerm := "%" + params.SearchString + "%"
 		queryParams = append(queryParams, searchTerm)
 		paramCounter++
