@@ -40,7 +40,7 @@ func SetupRoutes(app *fiber.App, db *sql.DB, rdb *redis.Client) {
 	})
 
 	voteRateLimiter := middleware.NewRateLimiter(middleware.RateLimiterConfig{
-		Max:       5,
+		Max:       1,
 		Window:    10 * time.Minute,
 		Redis:     rdb,
 		KeyPrefix: "votelimit:",
