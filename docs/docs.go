@@ -284,7 +284,7 @@ const docTemplate = `{
                     }
                 },
                 "score": {
-                    "description": "MaterializedScore calculated by db",
+                    "description": "Score calculated by db",
                     "type": "number"
                 },
                 "start_date": {
@@ -421,7 +421,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "api.discountdb.data-view.ch",
+	Host:             "api.discountdb.ch",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
 	Title:            "DiscountDB API",
