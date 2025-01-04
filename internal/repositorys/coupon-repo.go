@@ -46,6 +46,9 @@ CREATE TABLE IF NOT EXISTS coupons (
     regions TEXT[] DEFAULT ARRAY[]::TEXT[],
     store_type VARCHAR(50),
     
+    materialized_score DECIMAL(10,4),
+    last_score_update TIMESTAMP,
+    
     CONSTRAINT valid_discount_type CHECK (
         discount_type IN ('PERCENTAGE_OFF', 'FIXED_AMOUNT', 'BOGO', 'FREE_SHIPPING')
     ),
@@ -58,11 +61,148 @@ CREATE TABLE IF NOT EXISTS coupons (
 CREATE INDEX IF NOT EXISTS idx_coupons_merchant ON coupons(merchant_name);
 CREATE INDEX IF NOT EXISTS idx_coupons_created_at ON coupons(created_at);
 CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(code);
+CREATE INDEX IF NOT EXISTS idx_coupons_score ON coupons(materialized_score);
+
+CREATE OR REPLACE FUNCTION calculate_coupon_score(
+    p_discount_value DECIMAL,
+    p_discount_type VARCHAR,
+    p_maximum_discount_amount DECIMAL,
+    p_created_at TIMESTAMP,
+    p_up_votes TIMESTAMP[],
+    p_down_votes TIMESTAMP[]
+) RETURNS DECIMAL AS $$
+DECLARE
+    vote_score DECIMAL;
+    discount_score DECIMAL;
+    freshness_score DECIMAL;
+BEGIN
+    -- Calculate vote score
+    SELECT COALESCE(
+        SUM(
+            CASE 
+                WHEN age < INTERVAL '1 day' THEN 1.0
+                WHEN age < INTERVAL '1 week' THEN 0.8
+                WHEN age < INTERVAL '1 month' THEN 0.6
+                WHEN age < INTERVAL '6 months' THEN 0.4
+                ELSE 0.2
+            END
+        ), 0) INTO vote_score
+    FROM (
+        SELECT CURRENT_TIMESTAMP - unnest(p_up_votes) as age
+    ) up;
+    
+    SELECT vote_score - COALESCE(
+        SUM(
+            CASE 
+                WHEN age < INTERVAL '1 day' THEN 1.0
+                WHEN age < INTERVAL '1 week' THEN 0.8
+                WHEN age < INTERVAL '1 month' THEN 0.6
+                WHEN age < INTERVAL '6 months' THEN 0.4
+                ELSE 0.2
+            END
+        ), 0) INTO vote_score
+    FROM (
+        SELECT CURRENT_TIMESTAMP - unnest(p_down_votes) as age
+    ) down;
+
+    -- Calculate discount score
+    discount_score := CASE 
+        WHEN p_discount_type = 'PERCENTAGE_OFF' THEN 
+            LEAST(p_discount_value / 100.0, 1.0)
+        WHEN p_discount_type = 'FIXED_AMOUNT' THEN 
+            CASE 
+                WHEN p_maximum_discount_amount > 0 THEN 
+                    LEAST(p_discount_value / p_maximum_discount_amount, 1.0)
+                ELSE 
+                    LEAST(p_discount_value / 1000.0, 1.0)
+            END
+        WHEN p_discount_type IN ('BOGO', 'FREE_SHIPPING') THEN 
+            0.5
+    END;
+
+    -- Calculate freshness score
+    freshness_score := CASE 
+        WHEN CURRENT_TIMESTAMP - p_created_at < INTERVAL '1 day' THEN 1.0
+        WHEN CURRENT_TIMESTAMP - p_created_at < INTERVAL '1 week' THEN 0.8
+        WHEN CURRENT_TIMESTAMP - p_created_at < INTERVAL '1 month' THEN 0.6
+        WHEN CURRENT_TIMESTAMP - p_created_at < INTERVAL '3 months' THEN 0.4
+        WHEN CURRENT_TIMESTAMP - p_created_at < INTERVAL '6 months' THEN 0.2
+        ELSE 0.1
+    END;
+
+    -- Return weighted score
+    RETURN (vote_score * 0.4) + (discount_score * 0.4) + (freshness_score * 0.2);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create batch update function
+CREATE OR REPLACE FUNCTION update_materialized_scores_batch(batch_size INT) 
+RETURNS void AS $$
+BEGIN
+    WITH coupons_to_update AS (
+        SELECT id, discount_value, discount_type, maximum_discount_amount, 
+               created_at, up_votes, down_votes
+        FROM coupons 
+        WHERE last_score_update IS NULL
+        OR last_score_update < CURRENT_TIMESTAMP - INTERVAL '1 hour'
+        ORDER BY last_score_update NULLS FIRST 
+        LIMIT batch_size
+        FOR UPDATE SKIP LOCKED
+    )
+    UPDATE coupons c
+    SET materialized_score = calculate_coupon_score(
+            ct.discount_value,
+            ct.discount_type,
+            ct.maximum_discount_amount,
+            ct.created_at,
+            ct.up_votes,
+            ct.down_votes
+        ),
+        last_score_update = CURRENT_TIMESTAMP
+    FROM coupons_to_update ct
+    WHERE c.id = ct.id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger function
+CREATE OR REPLACE FUNCTION update_coupon_score() RETURNS TRIGGER AS $$
+BEGIN
+    NEW.materialized_score := calculate_coupon_score(
+        NEW.discount_value,
+        NEW.discount_type,
+        NEW.maximum_discount_amount,
+        NEW.created_at,
+        NEW.up_votes,
+        NEW.down_votes
+    );
+    NEW.last_score_update := CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger
+DROP TRIGGER IF EXISTS update_score_trigger ON coupons;
+CREATE TRIGGER update_score_trigger
+    BEFORE INSERT OR UPDATE OF discount_value, discount_type, maximum_discount_amount, up_votes, down_votes
+    ON coupons
+    FOR EACH ROW
+    EXECUTE FUNCTION update_coupon_score();
 `
 
 func (r *CouponRepository) CreateTable(ctx context.Context) error {
-	_, err := r.db.ExecContext(ctx, createTableSQL)
-	return err
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %v", err)
+	}
+
+	// Execute the entire script
+	_, err = tx.ExecContext(ctx, createTableSQL)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create tables and functions: %v", err)
+	}
+
+	return tx.Commit()
 }
 
 func (r *CouponRepository) Create(ctx context.Context, coupon *models.Coupon) error {
@@ -75,7 +215,7 @@ func (r *CouponRepository) Create(ctx context.Context, coupon *models.Coupon) er
         ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
             $13, $14, $15, $16, $17, $18
-        ) RETURNING id, created_at`
+        ) RETURNING id, created_at, materialized_score`
 
 	return r.db.QueryRowContext(ctx, query,
 		coupon.Code, coupon.Title, coupon.Description,
@@ -87,16 +227,21 @@ func (r *CouponRepository) Create(ctx context.Context, coupon *models.Coupon) er
 		&coupon.DownVotes, pq.Array(coupon.Categories),
 		pq.Array(coupon.Tags), pq.Array(coupon.Regions),
 		coupon.StoreType,
-	).Scan(&coupon.ID, &coupon.CreatedAt)
+	).Scan(&coupon.ID, &coupon.CreatedAt, &coupon.MaterializedScore)
 }
 
 func (r *CouponRepository) GetByID(ctx context.Context, id int64) (*models.Coupon, error) {
-	query := `
+	const query = `
         SELECT 
-            c1.*,
-            ` + calculateScoreSQL() + `
-        FROM coupons c1
-        WHERE c1.id = $1`
+            id, created_at, code, title, description,
+            discount_value, discount_type, merchant_name, merchant_url,
+            start_date, end_date, terms_conditions,
+            minimum_purchase_amount, maximum_discount_amount,
+            up_votes, down_votes, categories, tags,
+            regions, store_type, materialized_score,
+            last_score_update
+        FROM coupons 
+        WHERE id = $1`
 
 	coupon := &models.Coupon{}
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
@@ -108,7 +253,7 @@ func (r *CouponRepository) GetByID(ctx context.Context, id int64) (*models.Coupo
 		&coupon.UpVotes, &coupon.DownVotes,
 		pq.Array(&coupon.Categories), pq.Array(&coupon.Tags),
 		pq.Array(&coupon.Regions), &coupon.StoreType,
-		&coupon.Score, // Add score to scan
+		&coupon.MaterializedScore, &coupon.LastScoreUpdate,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
@@ -182,91 +327,19 @@ type SearchParams struct {
 	Offset       int
 }
 
-// calculateScore computes the weighted score for a coupon based on votes
-// More recent votes have more weight using an exponential decay function
-func calculateScoreSQL() string {
-	return `
-    (
-        -- Vote score component (from -1 to +1)
-        (
-            COALESCE(
-                (
-                    SELECT SUM(
-                        CASE 
-                            WHEN age < INTERVAL '1 day' THEN 1.0
-                            WHEN age < INTERVAL '1 week' THEN 0.8
-                            WHEN age < INTERVAL '1 month' THEN 0.6
-                            WHEN age < INTERVAL '6 months' THEN 0.4
-                            ELSE 0.2
-                        END
-                    )
-                    FROM (
-                        SELECT CURRENT_TIMESTAMP - unnest(up_votes) as age
-                        FROM coupons c2 
-                        WHERE c2.id = c1.id
-                    ) up
-                ), 0
-            ) -
-            COALESCE(
-                (
-                    SELECT SUM(
-                        CASE 
-                            WHEN age < INTERVAL '1 day' THEN 1.0
-                            WHEN age < INTERVAL '1 week' THEN 0.8
-                            WHEN age < INTERVAL '1 month' THEN 0.6
-                            WHEN age < INTERVAL '6 months' THEN 0.4
-                            ELSE 0.2
-                        END
-                    )
-                    FROM (
-                        SELECT CURRENT_TIMESTAMP - unnest(down_votes) as age
-                        FROM coupons c2 
-                        WHERE c2.id = c1.id
-                    ) down
-                ), 0
-            )
-        ) * 0.4 + -- 40% weight for votes
-        
-        -- Discount value component (normalized based on discount type)
-        (
-            CASE 
-                WHEN discount_type = 'PERCENTAGE_OFF' THEN 
-                    LEAST(discount_value / 100.0, 1.0)  -- Normalize percentage to 0-1
-                WHEN discount_type = 'FIXED_AMOUNT' THEN 
-                    CASE 
-                        WHEN maximum_discount_amount > 0 THEN 
-                            LEAST(discount_value / maximum_discount_amount, 1.0)
-                        ELSE 
-                            LEAST(discount_value / 1000.0, 1.0)  -- Assume $1000 as max reference
-                    END
-                WHEN discount_type IN ('BOGO', 'FREE_SHIPPING') THEN 
-                    0.5  -- Fixed score for BOGO and FREE_SHIPPING
-            END
-        ) * 0.4 + -- 40% weight for discount value
-        
-        -- Freshness component (higher score for newer coupons)
-        (
-            CASE 
-                WHEN CURRENT_TIMESTAMP - created_at < INTERVAL '1 day' THEN 1.0
-                WHEN CURRENT_TIMESTAMP - created_at < INTERVAL '1 week' THEN 0.8
-                WHEN CURRENT_TIMESTAMP - created_at < INTERVAL '1 month' THEN 0.6
-                WHEN CURRENT_TIMESTAMP - created_at < INTERVAL '3 months' THEN 0.4
-                WHEN CURRENT_TIMESTAMP - created_at < INTERVAL '6 months' THEN 0.2
-                ELSE 0.1
-            END
-        ) * 0.2  -- 20% weight for freshness
-    ) as score`
-}
-
 func (r *CouponRepository) Search(ctx context.Context, params SearchParams) ([]*models.Coupon, error) {
 	// Base query
 	query := `
-        WITH scored_coupons AS (
-            SELECT 
-                *,
-                ` + calculateScoreSQL() + `
-            FROM coupons c1
-            WHERE 1=1
+        SELECT 
+            id, created_at, code, title, description,
+            discount_value, discount_type, merchant_name, merchant_url,
+            start_date, end_date, terms_conditions,
+            minimum_purchase_amount, maximum_discount_amount,
+            up_votes, down_votes, categories, tags,
+            regions, store_type, materialized_score,
+            last_score_update
+        FROM coupons
+        WHERE 1=1
     `
 
 	// Initialize parameters array and counter
@@ -287,30 +360,15 @@ func (r *CouponRepository) Search(ctx context.Context, params SearchParams) ([]*
 		paramCounter++
 	}
 
-	// Close the CTE
-	query += `)`
-
-	// Add sorting
-	query += `
-		SELECT 
-			id, created_at, code, title, description, 
-			discount_value, discount_type, merchant_name, merchant_url,
-			start_date, end_date, terms_conditions,
-			minimum_purchase_amount, maximum_discount_amount,
-			up_votes, down_votes, categories, tags,
-			regions, store_type,
-			score  -- Add the computed score column at the end
-		FROM scored_coupons 
-    `
 	switch params.SortBy {
 	case SortByNewest:
 		query += ` ORDER BY created_at DESC`
 	case SortByOldest:
 		query += ` ORDER BY created_at ASC`
 	case SortByHighScore:
-		query += ` ORDER BY score DESC`
+		query += ` ORDER BY materialized_score  DESC`
 	case SortByLowScore:
-		query += ` ORDER BY score ASC`
+		query += ` ORDER BY materialized_score  ASC`
 	default:
 		query += ` ORDER BY created_at DESC`
 	}
@@ -344,7 +402,7 @@ func (r *CouponRepository) Search(ctx context.Context, params SearchParams) ([]*
 			&coupon.UpVotes, &coupon.DownVotes,
 			pq.Array(&coupon.Categories), pq.Array(&coupon.Tags),
 			pq.Array(&coupon.Regions), &coupon.StoreType,
-			&coupon.Score,
+			&coupon.MaterializedScore, &coupon.LastScoreUpdate,
 		)
 		if err != nil {
 			return nil, err

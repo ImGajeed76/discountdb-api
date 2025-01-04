@@ -41,7 +41,8 @@ type Coupon struct {
 	StoreType  string   `json:"store_type,omitempty"` // "online", "in_store", "both"
 
 	// Score calculated by db
-	Score float64 `json:"score"`
+	MaterializedScore float64    `json:"score"`
+	LastScoreUpdate   *time.Time `json:"-"` // not exposed to API
 }
 
 type CouponsSearchResponse struct {

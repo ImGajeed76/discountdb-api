@@ -284,7 +284,7 @@ const docTemplate = `{
                     }
                 },
                 "score": {
-                    "description": "Score calculated by db",
+                    "description": "MaterializedScore calculated by db",
                     "type": "number"
                 },
                 "start_date": {

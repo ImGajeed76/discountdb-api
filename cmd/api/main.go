@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"discountdb-api/internal/config"
 	"discountdb-api/internal/database"
+	"discountdb-api/internal/jobs"
 	"discountdb-api/internal/middleware"
 	"discountdb-api/internal/routes"
 	"github.com/gofiber/contrib/swagger"
@@ -53,6 +54,10 @@ func main() {
 		}
 	}(rdb)
 	log.Printf("Successfully connected to redis: %s", cfg.REDISHost)
+
+	// Initialize Cron Jobs
+	scoreUpdate := jobs.NewScoreUpdater(db, 1000, 1*time.Hour)
+	scoreUpdate.Start()
 
 	// Initialize Fiber app
 	app := fiber.New(fiber.Config{
