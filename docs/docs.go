@@ -223,6 +223,332 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/syrup/coupons": {
+            "get": {
+                "description": "Returns a paginated list of coupons for a specific domain",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "syrup"
+                ],
+                "summary": "List Coupons",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Optional API key for authentication",
+                        "name": "X-Syrup-API-Key",
+                        "in": "header"
+                    },
+                    {
+                        "type": "string",
+                        "description": "The website domain to fetch coupons for",
+                        "name": "domain",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Maximum number of coupons to return",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Number of coupons to skip",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.CouponList"
+                        },
+                        "headers": {
+                            "X-RateLimit-Limit": {
+                                "type": "string",
+                                "description": "The maximum number of requests allowed per time window"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "type": "string",
+                                "description": "The number of requests remaining in the time window"
+                            },
+                            "X-RateLimit-Reset": {
+                                "type": "string",
+                                "description": "The time when the rate limit window resets (Unix timestamp)"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        },
+                        "headers": {
+                            "X-RateLimit-RetryAfter": {
+                                "type": "integer",
+                                "description": "Time to wait before retrying (seconds)"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/syrup/coupons/invalid/{id}": {
+            "post": {
+                "description": "Report that a coupon code failed to work",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "syrup"
+                ],
+                "summary": "Report Invalid Coupon",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Optional API key for authentication",
+                        "name": "X-Syrup-API-Key",
+                        "in": "header"
+                    },
+                    {
+                        "type": "string",
+                        "description": "The ID of the coupon",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.Success"
+                        },
+                        "headers": {
+                            "X-RateLimit-Limit": {
+                                "type": "string",
+                                "description": "The maximum number of requests allowed per time window"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "type": "string",
+                                "description": "The number of requests remaining in the time window"
+                            },
+                            "X-RateLimit-Reset": {
+                                "type": "string",
+                                "description": "The time when the rate limit window resets (Unix timestamp)"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        },
+                        "headers": {
+                            "X-RateLimit-RetryAfter": {
+                                "type": "integer",
+                                "description": "Time to wait before retrying (seconds)"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/syrup/coupons/valid/{id}": {
+            "post": {
+                "description": "Report that a coupon code was successfully used",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "syrup"
+                ],
+                "summary": "Report Valid Coupon",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Optional API key for authentication",
+                        "name": "X-Syrup-API-Key",
+                        "in": "header"
+                    },
+                    {
+                        "type": "string",
+                        "description": "The ID of the coupon",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.Success"
+                        },
+                        "headers": {
+                            "X-RateLimit-Limit": {
+                                "type": "string",
+                                "description": "The maximum number of requests allowed per time window"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "type": "string",
+                                "description": "The number of requests remaining in the time window"
+                            },
+                            "X-RateLimit-Reset": {
+                                "type": "string",
+                                "description": "The time when the rate limit window resets (Unix timestamp)"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        },
+                        "headers": {
+                            "X-RateLimit-RetryAfter": {
+                                "type": "integer",
+                                "description": "Time to wait before retrying (seconds)"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/syrup/version": {
+            "get": {
+                "description": "Returns information about the API implementation",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "syrup"
+                ],
+                "summary": "Get API Version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Optional API key for authentication",
+                        "name": "X-Syrup-API-Key",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.VersionInfo"
+                        },
+                        "headers": {
+                            "X-RateLimit-Limit": {
+                                "type": "string",
+                                "description": "The maximum number of requests allowed per time window"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "type": "string",
+                                "description": "The number of requests remaining in the time window"
+                            },
+                            "X-RateLimit-Reset": {
+                                "type": "string",
+                                "description": "The time when the rate limit window resets (Unix timestamp)"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        },
+                        "headers": {
+                            "X-RateLimit-RetryAfter": {
+                                "type": "integer",
+                                "description": "Time to wait before retrying (seconds)"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -412,6 +738,84 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                }
+            }
+        },
+        "syrup.Coupon": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "DISCOUNT10"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Get 10% off"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "123"
+                },
+                "merchant_name": {
+                    "type": "string",
+                    "example": "Amazon"
+                },
+                "score": {
+                    "type": "number",
+                    "example": 5
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Discount"
+                }
+            }
+        },
+        "syrup.CouponList": {
+            "type": "object",
+            "properties": {
+                "coupons": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/syrup.Coupon"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "syrup.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Internal Server Error"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Something went wrong"
+                }
+            }
+        },
+        "syrup.Success": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "string",
+                    "example": "true"
+                }
+            }
+        },
+        "syrup.VersionInfo": {
+            "type": "object",
+            "properties": {
+                "provider": {
+                    "type": "string",
+                    "example": "DiscountDB"
+                },
+                "version": {
+                    "type": "string",
+                    "example": "1.0.0"
                 }
             }
         }

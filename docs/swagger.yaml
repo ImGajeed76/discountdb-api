@@ -131,6 +131,60 @@ definitions:
       id:
         type: integer
     type: object
+  syrup.Coupon:
+    properties:
+      code:
+        example: DISCOUNT10
+        type: string
+      description:
+        example: Get 10% off
+        type: string
+      id:
+        example: "123"
+        type: string
+      merchant_name:
+        example: Amazon
+        type: string
+      score:
+        example: 5
+        type: number
+      title:
+        example: Discount
+        type: string
+    type: object
+  syrup.CouponList:
+    properties:
+      coupons:
+        items:
+          $ref: '#/definitions/syrup.Coupon'
+        type: array
+      total:
+        type: integer
+    type: object
+  syrup.ErrorResponse:
+    properties:
+      error:
+        example: Internal Server Error
+        type: string
+      message:
+        example: Something went wrong
+        type: string
+    type: object
+  syrup.Success:
+    properties:
+      success:
+        example: "true"
+        type: string
+    type: object
+  syrup.VersionInfo:
+    properties:
+      provider:
+        example: DiscountDB
+        type: string
+      version:
+        example: 1.0.0
+        type: string
+    type: object
 host: api.discountdb.ch
 info:
   contact: {}
@@ -278,4 +332,224 @@ paths:
       summary: Health check endpoint
       tags:
       - health
+  /syrup/coupons:
+    get:
+      description: Returns a paginated list of coupons for a specific domain
+      parameters:
+      - description: Optional API key for authentication
+        in: header
+        name: X-Syrup-API-Key
+        type: string
+      - description: The website domain to fetch coupons for
+        in: query
+        name: domain
+        required: true
+        type: string
+      - default: 20
+        description: Maximum number of coupons to return
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      - default: 0
+        description: Number of coupons to skip
+        in: query
+        minimum: 0
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful response
+          headers:
+            X-RateLimit-Limit:
+              description: The maximum number of requests allowed per time window
+              type: string
+            X-RateLimit-Remaining:
+              description: The number of requests remaining in the time window
+              type: string
+            X-RateLimit-Reset:
+              description: The time when the rate limit window resets (Unix timestamp)
+              type: string
+          schema:
+            $ref: '#/definitions/syrup.CouponList'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+        "429":
+          description: Too Many Requests
+          headers:
+            X-RateLimit-RetryAfter:
+              description: Time to wait before retrying (seconds)
+              type: integer
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+      summary: List Coupons
+      tags:
+      - syrup
+  /syrup/coupons/invalid/{id}:
+    post:
+      description: Report that a coupon code failed to work
+      parameters:
+      - description: Optional API key for authentication
+        in: header
+        name: X-Syrup-API-Key
+        type: string
+      - description: The ID of the coupon
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful response
+          headers:
+            X-RateLimit-Limit:
+              description: The maximum number of requests allowed per time window
+              type: string
+            X-RateLimit-Remaining:
+              description: The number of requests remaining in the time window
+              type: string
+            X-RateLimit-Reset:
+              description: The time when the rate limit window resets (Unix timestamp)
+              type: string
+          schema:
+            $ref: '#/definitions/syrup.Success'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+        "429":
+          description: Too Many Requests
+          headers:
+            X-RateLimit-RetryAfter:
+              description: Time to wait before retrying (seconds)
+              type: integer
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+      summary: Report Invalid Coupon
+      tags:
+      - syrup
+  /syrup/coupons/valid/{id}:
+    post:
+      description: Report that a coupon code was successfully used
+      parameters:
+      - description: Optional API key for authentication
+        in: header
+        name: X-Syrup-API-Key
+        type: string
+      - description: The ID of the coupon
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful response
+          headers:
+            X-RateLimit-Limit:
+              description: The maximum number of requests allowed per time window
+              type: string
+            X-RateLimit-Remaining:
+              description: The number of requests remaining in the time window
+              type: string
+            X-RateLimit-Reset:
+              description: The time when the rate limit window resets (Unix timestamp)
+              type: string
+          schema:
+            $ref: '#/definitions/syrup.Success'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+        "429":
+          description: Too Many Requests
+          headers:
+            X-RateLimit-RetryAfter:
+              description: Time to wait before retrying (seconds)
+              type: integer
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+      summary: Report Valid Coupon
+      tags:
+      - syrup
+  /syrup/version:
+    get:
+      description: Returns information about the API implementation
+      parameters:
+      - description: Optional API key for authentication
+        in: header
+        name: X-Syrup-API-Key
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful response
+          headers:
+            X-RateLimit-Limit:
+              description: The maximum number of requests allowed per time window
+              type: string
+            X-RateLimit-Remaining:
+              description: The number of requests remaining in the time window
+              type: string
+            X-RateLimit-Reset:
+              description: The time when the rate limit window resets (Unix timestamp)
+              type: string
+          schema:
+            $ref: '#/definitions/syrup.VersionInfo'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+        "429":
+          description: Too Many Requests
+          headers:
+            X-RateLimit-RetryAfter:
+              description: Time to wait before retrying (seconds)
+              type: integer
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+      summary: Get API Version
+      tags:
+      - syrup
 swagger: "2.0"

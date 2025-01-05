@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"discountdb-api/internal/handlers"
 	"discountdb-api/internal/handlers/coupons"
+	"discountdb-api/internal/handlers/syrup"
 	"discountdb-api/internal/middleware"
 	"discountdb-api/internal/repositories"
 	"github.com/gofiber/fiber/v2"
@@ -61,4 +62,10 @@ func SetupRoutes(app *fiber.App, db *sql.DB, rdb *redis.Client) {
 			log.Printf("Vote processor error: %v", err)
 		}
 	}()
+
+	// Syrup Endpoint
+	api.Get("/syrup/version", syrup.GetVersionInfo)
+	api.Get("/syrup/coupons", syrup.GetCoupons)
+	api.Post("/syrup/coupons/valid/:id", syrup.PostCouponValid)
+	api.Post("/syrup/coupons/invalid/:id", syrup.PostCouponInvalid)
 }
