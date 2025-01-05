@@ -2,7 +2,7 @@ package coupons
 
 import (
 	"discountdb-api/internal/models"
-	"discountdb-api/internal/repositorys"
+	"discountdb-api/internal/repositories"
 	"encoding/json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
@@ -20,7 +20,7 @@ import (
 // @Failure 404 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
 // @Router /coupons/{id} [get]
-func GetCouponByID(c *fiber.Ctx, couponRepo *repositorys.CouponRepository, rdb *redis.Client) error {
+func GetCouponByID(c *fiber.Ctx, couponRepo *repositories.CouponRepository, rdb *redis.Client) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Message: "Invalid coupon ID"})

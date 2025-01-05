@@ -2,7 +2,7 @@ package coupons
 
 import (
 	"discountdb-api/internal/models"
-	"discountdb-api/internal/repositorys"
+	"discountdb-api/internal/repositories"
 	"encoding/json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
@@ -17,7 +17,7 @@ import (
 // @Success 200 {object} models.MerchantResponse
 // @Failure 500 {object} models.ErrorResponse
 // @Router /coupons/merchants [get]
-func GetMerchants(c *fiber.Ctx, couponRepo *repositorys.CouponRepository, rdb *redis.Client) error {
+func GetMerchants(c *fiber.Ctx, couponRepo *repositories.CouponRepository, rdb *redis.Client) error {
 	// redis cache
 	key := "merchants"
 

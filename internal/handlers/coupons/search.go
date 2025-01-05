@@ -2,7 +2,7 @@ package coupons
 
 import (
 	"discountdb-api/internal/models"
-	"discountdb-api/internal/repositorys"
+	"discountdb-api/internal/repositories"
 	"encoding/json"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
@@ -19,8 +19,8 @@ const (
 )
 
 // ParseSearchParams extracts and validates search parameters from the request
-func ParseSearchParams(c *fiber.Ctx) (repositorys.SearchParams, error) {
-	params := repositorys.SearchParams{
+func ParseSearchParams(c *fiber.Ctx) (repositories.SearchParams, error) {
+	params := repositories.SearchParams{
 		Limit:  defaultLimit,
 		Offset: defaultOffset,
 	}
@@ -29,8 +29,8 @@ func ParseSearchParams(c *fiber.Ctx) (repositorys.SearchParams, error) {
 	params.SearchString = c.Query("q")
 
 	// Parse sorting
-	sortBy := c.Query("sort_by", string(repositorys.SortByNewest))
-	params.SortBy = repositorys.SortBy(sortBy)
+	sortBy := c.Query("sort_by", string(repositories.SortByNewest))
+	params.SortBy = repositories.SortBy(sortBy)
 	if !isValidSortBy(params.SortBy) {
 		return params, fmt.Errorf("invalid sort_by parameter: %s", sortBy)
 	}
@@ -65,9 +65,9 @@ func ParseSearchParams(c *fiber.Ctx) (repositorys.SearchParams, error) {
 	return params, nil
 }
 
-func isValidSortBy(s repositorys.SortBy) bool {
+func isValidSortBy(s repositories.SortBy) bool {
 	switch s {
-	case repositorys.SortByNewest, repositorys.SortByOldest, repositorys.SortByHighScore, repositorys.SortByLowScore:
+	case repositories.SortByNewest, repositories.SortByOldest, repositories.SortByHighScore, repositories.SortByLowScore:
 		return true
 	default:
 		return false
@@ -88,7 +88,7 @@ func isValidSortBy(s repositorys.SortBy) bool {
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
 // @Router /coupons/search [get]
-func GetCoupons(c *fiber.Ctx, couponRepo *repositorys.CouponRepository, rdb *redis.Client) error {
+func GetCoupons(c *fiber.Ctx, couponRepo *repositories.CouponRepository, rdb *redis.Client) error {
 	// Get url parameters
 	params, err := ParseSearchParams(c)
 	if err != nil {

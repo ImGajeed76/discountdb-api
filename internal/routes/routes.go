@@ -6,7 +6,7 @@ import (
 	"discountdb-api/internal/handlers"
 	"discountdb-api/internal/handlers/coupons"
 	"discountdb-api/internal/middleware"
-	"discountdb-api/internal/repositorys"
+	"discountdb-api/internal/repositories"
 	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
 	"log"
@@ -26,7 +26,7 @@ func SetupRoutes(app *fiber.App, db *sql.DB, rdb *redis.Client) {
 	api.Get("/health", handlers.HealthCheck)
 
 	// Coupon endpoints
-	couponRepo := repositorys.NewCouponRepository(db)
+	couponRepo := repositories.NewCouponRepository(db)
 	if err := couponRepo.CreateTable(ctx); err != nil {
 		log.Fatalf("Failed to create coupon table: %v", err)
 	}

@@ -3,7 +3,7 @@ package coupons
 import (
 	"context"
 	"discountdb-api/internal/models"
-	"discountdb-api/internal/repositorys"
+	"discountdb-api/internal/repositories"
 	"encoding/json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
@@ -60,7 +60,7 @@ func PostVote(c *fiber.Ctx, rdb *redis.Client) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
-func ProcessVoteQueue(ctx context.Context, couponRepo *repositorys.CouponRepository, rdb *redis.Client, batchSize int) error {
+func ProcessVoteQueue(ctx context.Context, couponRepo *repositories.CouponRepository, rdb *redis.Client, batchSize int) error {
 	for {
 		// Get votes batch
 		results, err := rdb.LRange(ctx, "vote_queue", 0, int64(batchSize-1)).Result()
