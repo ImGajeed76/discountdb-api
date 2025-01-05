@@ -1,8 +1,8 @@
 package syrup
 
 import (
-	"discountdb-api/internal/models/syrup"
 	"github.com/gofiber/fiber/v2"
+	"github.com/redis/go-redis/v9"
 )
 
 // PostCouponInvalid godoc
@@ -22,13 +22,6 @@ import (
 // @Header 429 {integer} X-RateLimit-RetryAfter "Time to wait before retrying (seconds)"
 // @Failure 500 {object} syrup.ErrorResponse "Internal Server Error"
 // @Router /syrup/coupons/invalid/{id} [post]
-func PostCouponInvalid(ctx *fiber.Ctx) error {
-	// TODO: Implement this handler
-
-	return ctx.Status(fiber.StatusInternalServerError).JSON(
-		syrup.ErrorResponse{
-			Error:   "NotImplemented",
-			Message: "The API endpoint is not yet implemented",
-		},
-	)
+func PostCouponInvalid(ctx *fiber.Ctx, rdb *redis.Client) error {
+	return PostCouponVote(ctx, rdb, "down")
 }

@@ -325,9 +325,10 @@ type SearchParams struct {
 	SortBy       SortBy
 	Limit        int
 	Offset       int
+	SearchIn     []string
 }
 
-func (r *CouponRepository) Search(ctx context.Context, params SearchParams) ([]*models.Coupon, error) {
+func (r *CouponRepository) Search(ctx context.Context, params SearchParams) ([]models.Coupon, error) {
 	// Base query
 	query := `
         SELECT 
@@ -347,15 +348,28 @@ func (r *CouponRepository) Search(ctx context.Context, params SearchParams) ([]*
 	paramCounter := 1
 
 	// Add search condition if search string is provided
-	if params.SearchString != "" {
-		query += fmt.Sprintf(`
-            AND (
-                code ILIKE $%d OR
-                title ILIKE $%d OR
-                description ILIKE $%d OR
-                merchant_name ILIKE $%d OR
-				merchant_url ILIKE $%d
-            )`, paramCounter, paramCounter, paramCounter, paramCounter, paramCounter)
+	if params.SearchString != "" && len(params.SearchIn) > 0 {
+		/*
+					query += fmt.Sprintf(`
+			            AND (
+			                code ILIKE $%d OR
+			                title ILIKE $%d OR
+			                description ILIKE $%d OR
+			                merchant_name ILIKE $%d OR
+							merchant_url ILIKE $%d
+			            )`, paramCounter, paramCounter, paramCounter, paramCounter, paramCounter)
+		*/
+		query += `AND (`
+
+		for i, searchIn := range params.SearchIn {
+			if i > 0 {
+				query += " OR "
+			}
+			query += fmt.Sprintf(`%s ILIKE $%d`, searchIn, paramCounter)
+		}
+
+		query += `)`
+
 		searchTerm := "%" + params.SearchString + "%"
 		queryParams = append(queryParams, searchTerm)
 		paramCounter++
@@ -391,7 +405,7 @@ func (r *CouponRepository) Search(ctx context.Context, params SearchParams) ([]*
 	}(rows)
 
 	// Parse results
-	var coupons []*models.Coupon
+	var coupons []models.Coupon
 	for rows.Next() {
 		coupon := &models.Coupon{}
 		err := rows.Scan(
@@ -408,7 +422,7 @@ func (r *CouponRepository) Search(ctx context.Context, params SearchParams) ([]*
 		if err != nil {
 			return nil, err
 		}
-		coupons = append(coupons, coupon)
+		coupons = append(coupons, *coupon)
 	}
 
 	return coupons, nil

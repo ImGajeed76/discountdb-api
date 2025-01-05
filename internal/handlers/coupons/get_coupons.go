@@ -23,6 +23,13 @@ func ParseSearchParams(c *fiber.Ctx) (repositories.SearchParams, error) {
 	params := repositories.SearchParams{
 		Limit:  defaultLimit,
 		Offset: defaultOffset,
+		SearchIn: []string{
+			"code",
+			"title",
+			"description",
+			"merchant_name",
+			"merchant_url",
+		},
 	}
 
 	// Parse search string
@@ -74,6 +81,57 @@ func isValidSortBy(s repositories.SortBy) bool {
 	}
 }
 
+func SearchCoupons(params repositories.SearchParams, c *fiber.Ctx, couponRepo *repositories.CouponRepository, rdb *redis.Client) (*models.CouponsSearchResponse, error) {
+	// Just use the raw query string as the cache key
+	key := "coupons:" + string(c.Request().URI().QueryString())
+
+	// Try to get from cache
+	var response models.CouponsSearchResponse
+	if rdb != nil {
+		if cached, err := rdb.Get(c.Context(), key).Result(); err == nil {
+			if err := json.Unmarshal([]byte(cached), &response); err == nil {
+				return &response, nil
+			}
+			// If unmarshal fails, just log and continue to fetch fresh data
+			log.Printf("Failed to unmarshal cached data: %v", err)
+		}
+	}
+
+	// Search for coupons if not in cache
+	coupons, err := couponRepo.Search(c.Context(), params)
+	if err != nil {
+		log.Printf("Failed to search coupons: %v", err)
+		return nil, c.Status(fiber.StatusInternalServerError).JSON(models.ErrorResponse{Message: "Failed to search coupons"})
+	}
+
+	total, err := couponRepo.GetTotalCount(c.Context(), params)
+	if err != nil {
+		log.Printf("Failed to get total count: %v", err)
+		return nil, c.Status(fiber.StatusInternalServerError).JSON(models.ErrorResponse{Message: "Failed to get total count"})
+	}
+
+	// Prepare response
+	response = models.CouponsSearchResponse{
+		Data:   coupons,
+		Total:  int(total),
+		Limit:  params.Limit,
+		Offset: params.Offset,
+	}
+
+	// Cache the response
+	if rdb != nil {
+		if cached, err := json.Marshal(response); err == nil {
+			if err := rdb.Set(c.Context(), key, cached, cacheExpire).Err(); err != nil {
+				log.Printf("Failed to cache response: %v", err)
+			}
+		} else {
+			log.Printf("Failed to marshal response for caching: %v", err)
+		}
+	}
+
+	return &response, nil
+}
+
 // GetCoupons godoc
 // @Summary Get coupons with filtering and pagination
 // @Description Retrieve a list of coupons with optional search, sorting, and pagination
@@ -95,51 +153,10 @@ func GetCoupons(c *fiber.Ctx, couponRepo *repositories.CouponRepository, rdb *re
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Message: err.Error()})
 	}
 
-	// Just use the raw query string as the cache key
-	key := "coupons:" + string(c.Request().URI().QueryString())
-
-	// Try to get from cache
-	var response fiber.Map
-	if rdb != nil {
-		if cached, err := rdb.Get(c.Context(), key).Result(); err == nil {
-			if err := json.Unmarshal([]byte(cached), &response); err == nil {
-				return c.JSON(response)
-			}
-			// If unmarshal fails, just log and continue to fetch fresh data
-			log.Printf("Failed to unmarshal cached data: %v", err)
-		}
-	}
-
-	// Search for coupons if not in cache
-	coupons, err := couponRepo.Search(c.Context(), params)
+	// Search for coupons
+	response, err := SearchCoupons(params, c, couponRepo, rdb)
 	if err != nil {
-		log.Printf("Failed to search coupons: %v", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(models.ErrorResponse{Message: "Failed to search coupons"})
-	}
-
-	total, err := couponRepo.GetTotalCount(c.Context(), params)
-	if err != nil {
-		log.Printf("Failed to get total count: %v", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(models.ErrorResponse{Message: "Failed to get total count"})
-	}
-
-	// Prepare response
-	response = fiber.Map{
-		"data":   coupons,
-		"total":  total,
-		"limit":  params.Limit,
-		"offset": params.Offset,
-	}
-
-	// Cache the response
-	if rdb != nil {
-		if cached, err := json.Marshal(response); err == nil {
-			if err := rdb.Set(c.Context(), key, cached, cacheExpire).Err(); err != nil {
-				log.Printf("Failed to cache response: %v", err)
-			}
-		} else {
-			log.Printf("Failed to marshal response for caching: %v", err)
-		}
+		return err
 	}
 
 	return c.JSON(response)

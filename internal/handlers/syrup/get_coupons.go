@@ -1,8 +1,12 @@
 package syrup
 
 import (
+	"discountdb-api/internal/handlers/coupons"
 	"discountdb-api/internal/models/syrup"
+	"discountdb-api/internal/repositories"
 	"github.com/gofiber/fiber/v2"
+	"github.com/redis/go-redis/v9"
+	"strconv"
 )
 
 // GetCoupons godoc
@@ -24,13 +28,89 @@ import (
 // @Header 429 {integer} X-RateLimit-RetryAfter "Time to wait before retrying (seconds)"
 // @Failure 500 {object} syrup.ErrorResponse "Internal Server Error"
 // @Router /syrup/coupons [get]
-func GetCoupons(ctx *fiber.Ctx) error {
-	// TODO: Implement
-
-	return ctx.Status(fiber.StatusInternalServerError).JSON(
-		syrup.ErrorResponse{
-			Error:   "NotImplemented",
-			Message: "The API endpoint is not yet implemented",
+func GetCoupons(ctx *fiber.Ctx, couponRepo *repositories.CouponRepository, rdb *redis.Client) error {
+	params := repositories.SearchParams{
+		Limit:  20,
+		Offset: 0,
+		SearchIn: []string{
+			"merchant_url",
 		},
-	)
+	}
+
+	params.SearchString = ctx.Query("domain")
+	params.SortBy = repositories.SortByHighScore
+
+	if limitStr := ctx.Query("limitStr"); limitStr != "" {
+		limit, err := strconv.Atoi(limitStr)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(
+				syrup.ErrorResponse{
+					Error:   "InvalidLimit",
+					Message: "Invalid limit value",
+				},
+			)
+		}
+		if limit < 1 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(
+				syrup.ErrorResponse{
+					Error:   "InvalidLimit",
+					Message: "Limit must be greater than 0",
+				},
+			)
+		}
+		if limit > 100 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(
+				syrup.ErrorResponse{
+					Error:   "InvalidLimit",
+					Message: "Limit must be less than or equal to 100",
+				},
+			)
+		}
+		params.Limit = limit
+	}
+
+	if offsetStr := ctx.Query("offset"); offsetStr != "" {
+		offset, err := strconv.Atoi(offsetStr)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(
+				syrup.ErrorResponse{
+					Error:   "InvalidOffset",
+					Message: "Invalid offset value",
+				},
+			)
+		}
+		if offset < 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(
+				syrup.ErrorResponse{
+					Error:   "InvalidOffset",
+					Message: "Offset must be greater than or equal to 0",
+				},
+			)
+		}
+		params.Offset = offset
+	}
+
+	// Search for coupons
+	response, err := coupons.SearchCoupons(params, ctx, couponRepo, rdb)
+	if err != nil {
+		return err
+	}
+
+	// Remap response to syrup.CouponList
+	couponList := syrup.CouponList{
+		Total: response.Total,
+	}
+
+	for _, coupon := range response.Data {
+		couponList.Coupons = append(couponList.Coupons, syrup.Coupon{
+			ID:           strconv.FormatInt(coupon.ID, 10),
+			Code:         coupon.Code,
+			Title:        coupon.Title,
+			Description:  coupon.Description,
+			MerchantName: coupon.MerchantName,
+			Score:        coupon.MaterializedScore,
+		})
+	}
+
+	return ctx.JSON(couponList)
 }

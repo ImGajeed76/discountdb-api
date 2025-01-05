@@ -65,7 +65,13 @@ func SetupRoutes(app *fiber.App, db *sql.DB, rdb *redis.Client) {
 
 	// Syrup Endpoint
 	api.Get("/syrup/version", syrup.GetVersionInfo)
-	api.Get("/syrup/coupons", syrup.GetCoupons)
-	api.Post("/syrup/coupons/valid/:id", syrup.PostCouponValid)
-	api.Post("/syrup/coupons/invalid/:id", syrup.PostCouponInvalid)
+	api.Get("/syrup/coupons", func(ctx *fiber.Ctx) error {
+		return syrup.GetCoupons(ctx, couponRepo, rdb)
+	})
+	api.Post("/syrup/coupons/valid/:id", voteRateLimiter, func(ctx *fiber.Ctx) error {
+		return syrup.PostCouponValid(ctx, rdb)
+	})
+	api.Post("/syrup/coupons/invalid/:id", voteRateLimiter, func(ctx *fiber.Ctx) error {
+		return syrup.PostCouponInvalid(ctx, rdb)
+	})
 }
