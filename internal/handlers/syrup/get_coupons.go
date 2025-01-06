@@ -97,20 +97,27 @@ func GetCoupons(ctx *fiber.Ctx, couponRepo *repositories.CouponRepository, rdb *
 	}
 
 	// Remap response to syrup.CouponList
+	merchantName := "N/A"
+
 	couponList := syrup.CouponList{
 		Total: response.Total,
 	}
 
 	for _, coupon := range response.Data {
+		if merchantName == "N/A" && coupon.MerchantName != "" {
+			merchantName = coupon.MerchantName
+		}
+
 		couponList.Coupons = append(couponList.Coupons, syrup.Coupon{
-			ID:           strconv.FormatInt(coupon.ID, 10),
-			Code:         coupon.Code,
-			Title:        coupon.Title,
-			Description:  coupon.Description,
-			MerchantName: coupon.MerchantName,
-			Score:        coupon.MaterializedScore,
+			ID:          strconv.FormatInt(coupon.ID, 10),
+			Code:        coupon.Code,
+			Title:       coupon.Title,
+			Description: coupon.Description,
+			Score:       coupon.MaterializedScore,
 		})
 	}
+
+	couponList.MerchantName = merchantName
 
 	return ctx.JSON(couponList)
 }
