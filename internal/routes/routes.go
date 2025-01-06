@@ -8,6 +8,7 @@ import (
 	"discountdb-api/internal/handlers/syrup"
 	"discountdb-api/internal/middleware"
 	"discountdb-api/internal/repositories"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
 	"log"
@@ -17,6 +18,24 @@ import (
 func SetupRoutes(app *fiber.App, db *sql.DB, rdb *redis.Client) {
 	ctx := context.Background()
 	api := app.Group("/api/v1")
+
+	// Middlewares
+	defaultRateLimiter := middleware.NewRateLimiter(middleware.RateLimiterConfig{
+		Max:       100,
+		Window:    time.Minute,
+		Redis:     rdb,
+		KeyPrefix: "ratelimit:",
+	})
+
+	voteRateLimiter := middleware.NewRateLimiter(middleware.RateLimiterConfig{
+		Max:       1,
+		Window:    10 * time.Minute,
+		Redis:     rdb,
+		KeyPrefix: "votelimit:",
+		KeyFunc: func(c *fiber.Ctx) string {
+			return fmt.Sprintf("%s:%s", c.IP(), c.Params("id"))
+		},
+	})
 
 	// Default route
 	app.Get("/", func(c *fiber.Ctx) error {
@@ -32,27 +51,17 @@ func SetupRoutes(app *fiber.App, db *sql.DB, rdb *redis.Client) {
 		log.Fatalf("Failed to create coupon table: %v", err)
 	}
 
-	api.Get("/coupons/search", func(ctx *fiber.Ctx) error {
+	api.Get("/coupons/search", defaultRateLimiter, func(ctx *fiber.Ctx) error {
 		return coupons.GetCoupons(ctx, couponRepo, rdb)
 	})
-
-	api.Get("/coupons/merchants", func(ctx *fiber.Ctx) error {
+	api.Get("/coupons/merchants", defaultRateLimiter, func(ctx *fiber.Ctx) error {
 		return coupons.GetMerchants(ctx, couponRepo, rdb)
 	})
-
-	voteRateLimiter := middleware.NewRateLimiter(middleware.RateLimiterConfig{
-		Max:       1,
-		Window:    10 * time.Minute,
-		Redis:     rdb,
-		KeyPrefix: "votelimit:",
-	})
-
-	api.Post("/coupons/vote", voteRateLimiter, func(ctx *fiber.Ctx) error {
+	api.Post("/coupons/vote/:dir/:id", voteRateLimiter, func(ctx *fiber.Ctx) error {
 		return coupons.PostVote(ctx, rdb)
 	})
-
 	// This has to be the last route to avoid conflicts
-	api.Get("/coupons/:id", func(ctx *fiber.Ctx) error {
+	api.Get("/coupons/:id", defaultRateLimiter, func(ctx *fiber.Ctx) error {
 		return coupons.GetCouponByID(ctx, couponRepo, rdb)
 	})
 
@@ -65,7 +74,7 @@ func SetupRoutes(app *fiber.App, db *sql.DB, rdb *redis.Client) {
 
 	// Syrup Endpoint
 	api.Get("/syrup/version", syrup.GetVersionInfo)
-	api.Get("/syrup/coupons", func(ctx *fiber.Ctx) error {
+	api.Get("/syrup/coupons", defaultRateLimiter, func(ctx *fiber.Ctx) error {
 		return syrup.GetCoupons(ctx, couponRepo, rdb)
 	})
 	api.Post("/syrup/coupons/valid/:id", voteRateLimiter, func(ctx *fiber.Ctx) error {
@@ -74,7 +83,7 @@ func SetupRoutes(app *fiber.App, db *sql.DB, rdb *redis.Client) {
 	api.Post("/syrup/coupons/invalid/:id", voteRateLimiter, func(ctx *fiber.Ctx) error {
 		return syrup.PostCouponInvalid(ctx, rdb)
 	})
-	api.Get("/syrup/merchants", func(ctx *fiber.Ctx) error {
+	api.Get("/syrup/merchants", defaultRateLimiter, func(ctx *fiber.Ctx) error {
 		return syrup.GetMerchants(ctx, couponRepo, rdb)
 	})
 }

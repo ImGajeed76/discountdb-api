@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
+	"strconv"
 	"time"
 )
 
@@ -20,25 +21,33 @@ type VoteQueue struct {
 // @Summary Vote on a coupon
 // @Description Vote on a coupon by ID
 // @Tags votes
-// @Accept json
 // @Produce json
-// @Param vote body models.VoteBody true "Vote body"
-// @Success 200
+// @Param dir path string true "Vote direction (up or down)"
+// @Param id path string true "Coupon ID"
+// @Success 200 {object} models.Success
 // @Failure 400 {object} models.ErrorResponse
-// @Router /coupons/vote [post]
+// @Router /coupons/vote/:dir/:id [post]
 func PostVote(c *fiber.Ctx, rdb *redis.Client) error {
-
-	var vote models.VoteBody
-	if err := c.BodyParser(&vote); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Message: "Invalid request body"})
+	// Get vote direction
+	dir := c.Params("dir")
+	if dir != "up" && dir != "down" {
+		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{
+			Message: "Invalid vote direction",
+		})
 	}
 
-	if vote.Dir != "up" && vote.Dir != "down" {
-		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Message: "Invalid vote direction"})
+	vote := models.VoteBody{
+		Dir: dir,
 	}
 
-	if vote.ID < 1 {
-		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Message: "Invalid coupon ID"})
+	if id, err := strconv.Atoi(c.Params("id")); err != nil || id < 1 {
+		return c.Status(fiber.StatusBadRequest).JSON(
+			models.ErrorResponse{
+				Message: "Invalid coupon ID",
+			},
+		)
+	} else {
+		vote.ID = int64(id)
 	}
 
 	voteQueue := VoteQueue{
@@ -57,7 +66,9 @@ func PostVote(c *fiber.Ctx, rdb *redis.Client) error {
 		return err
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return c.JSON(models.Success{
+		Message: "Vote successfully added to queue",
+	})
 }
 
 func ProcessVoteQueue(ctx context.Context, couponRepo *repositories.CouponRepository, rdb *redis.Client, batchSize int) error {

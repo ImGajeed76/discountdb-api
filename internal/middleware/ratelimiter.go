@@ -24,6 +24,9 @@ type RateLimiterConfig struct {
 
 	// Optional response when rate limit is exceeded
 	LimitExceededHandler fiber.Handler
+
+	// Optional key generation function
+	KeyFunc func(c *fiber.Ctx) string
 }
 
 // Default config for rate limiter
@@ -35,6 +38,9 @@ var ConfigDefault = RateLimiterConfig{
 		return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
 			"error": "Too many requests",
 		})
+	},
+	KeyFunc: func(c *fiber.Ctx) string {
+		return c.IP()
 	},
 }
 
@@ -58,6 +64,9 @@ func configDefault(config ...RateLimiterConfig) RateLimiterConfig {
 	if cfg.LimitExceededHandler == nil {
 		cfg.LimitExceededHandler = ConfigDefault.LimitExceededHandler
 	}
+	if cfg.KeyFunc == nil {
+		cfg.KeyFunc = ConfigDefault.KeyFunc
+	}
 
 	return cfg
 }
@@ -73,8 +82,7 @@ func NewRateLimiter(config ...RateLimiterConfig) fiber.Handler {
 	// Return the middleware handler
 	return func(c *fiber.Ctx) error {
 		// Get IP address
-		ip := c.IP()
-		key := fmt.Sprintf("%s%s", cfg.KeyPrefix, ip)
+		key := fmt.Sprintf("%s%s", cfg.KeyPrefix, cfg.KeyFunc(c))
 
 		// Get current timestamp in milliseconds
 		now := time.Now().UnixNano() / int64(time.Millisecond)
@@ -108,6 +116,7 @@ func NewRateLimiter(config ...RateLimiterConfig) fiber.Handler {
 		// Check if limit is exceeded
 		count := countCmd.Val()
 		if count > int64(cfg.Max) {
+			c.Set("X-RateLimit-RetryAfter", fmt.Sprintf("%d", cfg.Window/time.Second))
 			return cfg.LimitExceededHandler(c)
 		}
 

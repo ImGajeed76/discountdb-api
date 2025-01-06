@@ -5,7 +5,6 @@ import (
 	"discountdb-api/internal/config"
 	"discountdb-api/internal/database"
 	"discountdb-api/internal/jobs"
-	"discountdb-api/internal/middleware"
 	"discountdb-api/internal/routes"
 	"github.com/gofiber/contrib/swagger"
 	"github.com/gofiber/fiber/v2"
@@ -71,13 +70,6 @@ func main() {
 		FilePath: "./docs/swagger.json",
 		Path:     "docs",
 		Title:    "DiscountDB API v1.0",
-	}))
-
-	app.Use(middleware.NewRateLimiter(middleware.RateLimiterConfig{
-		Max:       100,
-		Window:    time.Minute,
-		Redis:     rdb,
-		KeyPrefix: "ratelimit:",
 	}))
 
 	app.Use(cors.New(cors.Config{
