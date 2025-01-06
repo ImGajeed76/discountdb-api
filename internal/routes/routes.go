@@ -27,8 +27,18 @@ func SetupRoutes(app *fiber.App, db *sql.DB, rdb *redis.Client) {
 		KeyPrefix: "ratelimit:",
 	})
 
-	voteRateLimiter := middleware.NewRateLimiter(middleware.RateLimiterConfig{
+	singleVoteRateLimiter := middleware.NewRateLimiter(middleware.RateLimiterConfig{
 		Max:       1,
+		Window:    10 * time.Minute,
+		Redis:     rdb,
+		KeyPrefix: "singlevotelimit:",
+		KeyFunc: func(c *fiber.Ctx) string {
+			return fmt.Sprintf("%s:%s", c.IP(), c.Params("id"))
+		},
+	})
+
+	voteRateLimiter := middleware.NewRateLimiter(middleware.RateLimiterConfig{
+		Max:       10,
 		Window:    10 * time.Minute,
 		Redis:     rdb,
 		KeyPrefix: "votelimit:",
@@ -57,7 +67,7 @@ func SetupRoutes(app *fiber.App, db *sql.DB, rdb *redis.Client) {
 	api.Get("/coupons/merchants", defaultRateLimiter, func(ctx *fiber.Ctx) error {
 		return coupons.GetMerchants(ctx, couponRepo, rdb)
 	})
-	api.Post("/coupons/vote/:dir/:id", voteRateLimiter, func(ctx *fiber.Ctx) error {
+	api.Post("/coupons/vote/:dir/:id", voteRateLimiter, singleVoteRateLimiter, func(ctx *fiber.Ctx) error {
 		return coupons.PostVote(ctx, rdb)
 	})
 	// This has to be the last route to avoid conflicts
@@ -77,10 +87,10 @@ func SetupRoutes(app *fiber.App, db *sql.DB, rdb *redis.Client) {
 	api.Get("/syrup/coupons", defaultRateLimiter, func(ctx *fiber.Ctx) error {
 		return syrup.GetCoupons(ctx, couponRepo, rdb)
 	})
-	api.Post("/syrup/coupons/valid/:id", voteRateLimiter, func(ctx *fiber.Ctx) error {
+	api.Post("/syrup/coupons/valid/:id", voteRateLimiter, singleVoteRateLimiter, func(ctx *fiber.Ctx) error {
 		return syrup.PostCouponValid(ctx, rdb)
 	})
-	api.Post("/syrup/coupons/invalid/:id", voteRateLimiter, func(ctx *fiber.Ctx) error {
+	api.Post("/syrup/coupons/invalid/:id", voteRateLimiter, singleVoteRateLimiter, func(ctx *fiber.Ctx) error {
 		return syrup.PostCouponInvalid(ctx, rdb)
 	})
 	api.Get("/syrup/merchants", defaultRateLimiter, func(ctx *fiber.Ctx) error {
