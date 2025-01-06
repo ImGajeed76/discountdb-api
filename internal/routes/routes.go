@@ -42,9 +42,6 @@ func SetupRoutes(app *fiber.App, db *sql.DB, rdb *redis.Client) {
 		Window:    10 * time.Minute,
 		Redis:     rdb,
 		KeyPrefix: "votelimit:",
-		KeyFunc: func(c *fiber.Ctx) string {
-			return fmt.Sprintf("%s:%s", c.IP(), c.Params("id"))
-		},
 	})
 
 	// Default route
