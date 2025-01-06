@@ -460,7 +460,14 @@ func (r *CouponRepository) GetTotalCount(ctx context.Context, params SearchParam
 // --- Merchants ---
 
 func (r *CouponRepository) GetMerchants(ctx context.Context) (*models.MerchantResponse, error) {
-	query := `SELECT DISTINCT merchant_name, merchant_url FROM coupons ORDER BY merchant_name;`
+	query := `
+    SELECT
+       merchant_name,
+       ARRAY_AGG(DISTINCT merchant_url) as merchant_url
+    FROM coupons
+    GROUP BY merchant_name
+    ORDER BY merchant_name;
+`
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
@@ -475,7 +482,7 @@ func (r *CouponRepository) GetMerchants(ctx context.Context) (*models.MerchantRe
 	var merchants []models.Merchant
 	for rows.Next() {
 		merchant := models.Merchant{}
-		err := rows.Scan(&merchant.Name, &merchant.URL)
+		err := rows.Scan(&merchant.Name, pq.Array(&merchant.Domains))
 		if err != nil {
 			return nil, err
 		}
