@@ -435,16 +435,21 @@ func (r *CouponRepository) GetTotalCount(ctx context.Context, params SearchParam
 	queryParams := make([]interface{}, 0)
 	paramCounter := 1
 
-	if params.SearchString != "" {
-		query += fmt.Sprintf(`
-            AND (
-                code ILIKE $%d OR
-                title ILIKE $%d OR
-                description ILIKE $%d OR
-                merchant_name ILIKE $%d
-            )`, paramCounter, paramCounter, paramCounter, paramCounter)
+	if params.SearchString != "" && len(params.SearchIn) > 0 {
+		query += ` AND (`
+
+		for i, searchIn := range params.SearchIn {
+			if i > 0 {
+				query += " OR "
+			}
+			query += fmt.Sprintf(`%s ILIKE $%d`, searchIn, paramCounter)
+		}
+
+		query += `)`
+
 		searchTerm := "%" + params.SearchString + "%"
 		queryParams = append(queryParams, searchTerm)
+		paramCounter++
 	}
 
 	var count int64
