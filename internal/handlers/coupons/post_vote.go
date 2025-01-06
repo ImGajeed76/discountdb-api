@@ -26,7 +26,7 @@ type VoteQueue struct {
 // @Param id path string true "Coupon ID"
 // @Success 200 {object} models.Success
 // @Failure 400 {object} models.ErrorResponse
-// @Router /coupons/vote/:dir/:id [post]
+// @Router /coupons/vote/{dir}/{id} [post]
 func PostVote(c *fiber.Ctx, rdb *redis.Client) error {
 	// Get vote direction
 	dir := c.Params("dir")

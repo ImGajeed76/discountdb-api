@@ -114,12 +114,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/coupons/vote": {
+        "/coupons/vote/{dir}/{id}": {
             "post": {
                 "description": "Vote on a coupon by ID",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -129,18 +126,26 @@ const docTemplate = `{
                 "summary": "Vote on a coupon",
                 "parameters": [
                     {
-                        "description": "Vote body",
-                        "name": "vote",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.VoteBody"
-                        }
+                        "type": "string",
+                        "description": "Vote direction (up or down)",
+                        "name": "dir",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Coupon ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Success"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -478,6 +483,78 @@ const docTemplate = `{
                 }
             }
         },
+        "/syrup/merchants": {
+            "get": {
+                "description": "Returns a list of all merchants and their domains",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "syrup"
+                ],
+                "summary": "List all Merchants",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Optional API key for authentication",
+                        "name": "X-Syrup-API-Key",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.MerchantList"
+                        },
+                        "headers": {
+                            "X-RateLimit-Limit": {
+                                "type": "string",
+                                "description": "The maximum number of requests allowed per time window"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "type": "string",
+                                "description": "The number of requests remaining in the time window"
+                            },
+                            "X-RateLimit-Reset": {
+                                "type": "string",
+                                "description": "The time when the rate limit window resets (Unix timestamp)"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        },
+                        "headers": {
+                            "X-RateLimit-RetryAfter": {
+                                "type": "integer",
+                                "description": "Time to wait before retrying (seconds)"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/syrup.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/syrup/version": {
             "get": {
                 "description": "Returns information about the API implementation",
@@ -710,8 +787,10 @@ const docTemplate = `{
                     "example": "merchant1"
                 },
                 "merchant_url": {
-                    "type": "string",
-                    "example": "https://merchant1.com"
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -730,14 +809,12 @@ const docTemplate = `{
                 }
             }
         },
-        "models.VoteBody": {
+        "models.Success": {
             "type": "object",
             "properties": {
-                "dir": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
+                "message": {
+                    "type": "string",
+                    "example": "Success"
                 }
             }
         },
@@ -755,10 +832,6 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "example": "123"
-                },
-                "merchant_name": {
-                    "type": "string",
-                    "example": "Amazon"
                 },
                 "score": {
                     "type": "number",
@@ -779,6 +852,10 @@ const docTemplate = `{
                         "$ref": "#/definitions/syrup.Coupon"
                     }
                 },
+                "merchant_name": {
+                    "type": "string",
+                    "example": "Amazon"
+                },
                 "total": {
                     "type": "integer"
                 }
@@ -794,6 +871,34 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "example": "Something went wrong"
+                }
+            }
+        },
+        "syrup.Merchant": {
+            "type": "object",
+            "properties": {
+                "domains": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "merchant_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "syrup.MerchantList": {
+            "type": "object",
+            "properties": {
+                "merchants": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/syrup.Merchant"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },

@@ -111,8 +111,9 @@ definitions:
         example: merchant1
         type: string
       merchant_url:
-        example: https://merchant1.com
-        type: string
+        items:
+          type: string
+        type: array
     type: object
   models.MerchantResponse:
     properties:
@@ -124,12 +125,11 @@ definitions:
         example: 2
         type: integer
     type: object
-  models.VoteBody:
+  models.Success:
     properties:
-      dir:
+      message:
+        example: Success
         type: string
-      id:
-        type: integer
     type: object
   syrup.Coupon:
     properties:
@@ -141,9 +141,6 @@ definitions:
         type: string
       id:
         example: "123"
-        type: string
-      merchant_name:
-        example: Amazon
         type: string
       score:
         example: 5
@@ -158,6 +155,9 @@ definitions:
         items:
           $ref: '#/definitions/syrup.Coupon'
         type: array
+      merchant_name:
+        example: Amazon
+        type: string
       total:
         type: integer
     type: object
@@ -169,6 +169,24 @@ definitions:
       message:
         example: Something went wrong
         type: string
+    type: object
+  syrup.Merchant:
+    properties:
+      domains:
+        items:
+          type: string
+        type: array
+      merchant_name:
+        type: string
+    type: object
+  syrup.MerchantList:
+    properties:
+      merchants:
+        items:
+          $ref: '#/definitions/syrup.Merchant'
+        type: array
+      total:
+        type: integer
     type: object
   syrup.Success:
     properties:
@@ -289,23 +307,27 @@ paths:
       summary: Get coupons with filtering and pagination
       tags:
       - coupons
-  /coupons/vote:
+  /coupons/vote/{dir}/{id}:
     post:
-      consumes:
-      - application/json
       description: Vote on a coupon by ID
       parameters:
-      - description: Vote body
-        in: body
-        name: vote
+      - description: Vote direction (up or down)
+        in: path
+        name: dir
         required: true
-        schema:
-          $ref: '#/definitions/models.VoteBody'
+        type: string
+      - description: Coupon ID
+        in: path
+        name: id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
+          schema:
+            $ref: '#/definitions/models.Success'
         "400":
           description: Bad Request
           schema:
@@ -502,6 +524,54 @@ paths:
           schema:
             $ref: '#/definitions/syrup.ErrorResponse'
       summary: Report Valid Coupon
+      tags:
+      - syrup
+  /syrup/merchants:
+    get:
+      description: Returns a list of all merchants and their domains
+      parameters:
+      - description: Optional API key for authentication
+        in: header
+        name: X-Syrup-API-Key
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful response
+          headers:
+            X-RateLimit-Limit:
+              description: The maximum number of requests allowed per time window
+              type: string
+            X-RateLimit-Remaining:
+              description: The number of requests remaining in the time window
+              type: string
+            X-RateLimit-Reset:
+              description: The time when the rate limit window resets (Unix timestamp)
+              type: string
+          schema:
+            $ref: '#/definitions/syrup.MerchantList'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+        "429":
+          description: Too Many Requests
+          headers:
+            X-RateLimit-RetryAfter:
+              description: Time to wait before retrying (seconds)
+              type: integer
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/syrup.ErrorResponse'
+      summary: List all Merchants
       tags:
       - syrup
   /syrup/version:

@@ -45,6 +45,11 @@ Configure the following in your `.env`:
 4. Generate Swagger documentation
 
 ```bash
+# Install swag if you haven't already
+go install github.com/swaggo/swag/cmd/swag@latest
+```
+
+```bash
 swag init -g ./cmd/api/main.go
 ```
 
