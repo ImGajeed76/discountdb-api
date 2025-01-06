@@ -62,6 +62,61 @@ definitions:
           type: string
         type: array
     type: object
+  models.CouponCreateRequest:
+    properties:
+      categories:
+        description: Metadata
+        items:
+          type: string
+        type: array
+      code:
+        description: Required Information
+        type: string
+      description:
+        type: string
+      discount_type:
+        $ref: '#/definitions/models.DiscountType'
+      discount_value:
+        type: number
+      end_date:
+        type: string
+      maximum_discount_amount:
+        type: number
+      merchant_name:
+        type: string
+      merchant_url:
+        type: string
+      minimum_purchase_amount:
+        type: number
+      regions:
+        description: countries/regions where valid
+        items:
+          type: string
+        type: array
+      start_date:
+        description: Optional Validity Information
+        type: string
+      store_type:
+        description: '"online", "in_store", "both"'
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      terms_conditions:
+        type: string
+      title:
+        type: string
+    type: object
+  models.CouponCreateResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      score:
+        type: number
+    type: object
   models.CouponsSearchResponse:
     properties:
       data:
@@ -211,6 +266,36 @@ info:
   title: DiscountDB API
   version: "1.0"
 paths:
+  /coupons:
+    post:
+      consumes:
+      - application/json
+      description: Create a new coupon
+      parameters:
+      - description: CouponCreateRequest object
+        in: body
+        name: coupon
+        required: true
+        schema:
+          $ref: '#/definitions/models.CouponCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CouponCreateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Create a new coupon
+      tags:
+      - coupons
   /coupons/{id}:
     get:
       consumes:

@@ -10,6 +10,52 @@
     "host": "api.discountdb.ch",
     "basePath": "/api/v1",
     "paths": {
+        "/coupons": {
+            "post": {
+                "description": "Create a new coupon",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "coupons"
+                ],
+                "summary": "Create a new coupon",
+                "parameters": [
+                    {
+                        "description": "CouponCreateRequest object",
+                        "name": "coupon",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CouponCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.CouponCreateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/coupons/merchants": {
             "get": {
                 "description": "Retrieve a list of all merchants",
@@ -710,6 +756,87 @@
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "models.CouponCreateRequest": {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "description": "Metadata",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "code": {
+                    "description": "Required Information",
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "discount_type": {
+                    "$ref": "#/definitions/models.DiscountType"
+                },
+                "discount_value": {
+                    "type": "number"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "maximum_discount_amount": {
+                    "type": "number"
+                },
+                "merchant_name": {
+                    "type": "string"
+                },
+                "merchant_url": {
+                    "type": "string"
+                },
+                "minimum_purchase_amount": {
+                    "type": "number"
+                },
+                "regions": {
+                    "description": "countries/regions where valid",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "start_date": {
+                    "description": "Optional Validity Information",
+                    "type": "string"
+                },
+                "store_type": {
+                    "description": "\"online\", \"in_store\", \"both\"",
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "terms_conditions": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CouponCreateResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "score": {
+                    "type": "number"
                 }
             }
         },

@@ -47,6 +47,13 @@ func SetupRoutes(app *fiber.App, db *sql.DB, rdb *redis.Client) {
 		},
 	})
 
+	createCouponRateLimiter := middleware.NewRateLimiter(middleware.RateLimiterConfig{
+		Max:       2,
+		Window:    10 * time.Minute,
+		Redis:     rdb,
+		KeyPrefix: "createcouponlimit:",
+	})
+
 	// Default route
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("API is running") // Or redirect to docs/API info
@@ -61,6 +68,9 @@ func SetupRoutes(app *fiber.App, db *sql.DB, rdb *redis.Client) {
 		log.Fatalf("Failed to create coupon table: %v", err)
 	}
 
+	api.Post("/coupons", createCouponRateLimiter, func(ctx *fiber.Ctx) error {
+		return coupons.PostCoupon(ctx, couponRepo, rdb)
+	})
 	api.Get("/coupons/search", defaultRateLimiter, func(ctx *fiber.Ctx) error {
 		return coupons.GetCoupons(ctx, couponRepo, rdb)
 	})
