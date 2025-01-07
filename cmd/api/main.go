@@ -6,6 +6,7 @@ import (
 	"discountdb-api/internal/database"
 	"discountdb-api/internal/jobs"
 	"discountdb-api/internal/routes"
+	emailreader "discountdb-api/internal/services/email-reader"
 	"github.com/gofiber/contrib/swagger"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -53,6 +54,17 @@ func main() {
 		}
 	}(rdb)
 	log.Printf("Successfully connected to redis: %s", cfg.REDISHost)
+
+	// Initialize GMail
+	gmail, err := emailreader.NewGMailClient(cfg)
+	if err != nil {
+		log.Fatalf("Failed to initialize GMail client: %v", err)
+	}
+
+	err = emailreader.ScanNewEmails(gmail)
+	if err != nil {
+		log.Printf("Failed to scan new emails: %v", err)
+	}
 
 	// Initialize Cron Jobs
 	scoreUpdate := jobs.NewScoreUpdater(db, 1000, 1*time.Hour)

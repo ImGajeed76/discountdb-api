@@ -17,6 +17,7 @@ go.work.sum
 
 # env file
 .env
+credentials.json
 
 # Idea
 .idea
