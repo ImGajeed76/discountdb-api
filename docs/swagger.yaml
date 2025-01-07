@@ -1,5 +1,15 @@
 basePath: /api/v1
 definitions:
+  models.CategoriesResponse:
+    properties:
+      data:
+        items:
+          type: string
+        type: array
+      total:
+        example: 2
+        type: integer
+    type: object
   models.Coupon:
     properties:
       categories:
@@ -180,11 +190,29 @@ definitions:
         example: 2
         type: integer
     type: object
+  models.RegionResponse:
+    properties:
+      regions:
+        items:
+          type: string
+        type: array
+      total:
+        type: integer
+    type: object
   models.Success:
     properties:
       message:
         example: Success
         type: string
+    type: object
+  models.TagResponse:
+    properties:
+      tags:
+        items:
+          type: string
+        type: array
+      total:
+        type: integer
     type: object
   syrup.Coupon:
     properties:
@@ -325,6 +353,23 @@ paths:
       summary: Get coupon by ID
       tags:
       - coupons
+  /coupons/categories:
+    get:
+      description: Retrieve a list of all categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CategoriesResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get all categories
+      tags:
+      - categories
   /coupons/merchants:
     get:
       description: Retrieve a list of all merchants
@@ -342,6 +387,23 @@ paths:
       summary: Get all merchants
       tags:
       - merchants
+  /coupons/regions:
+    get:
+      description: Retrieve a list of all regions
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.RegionResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get all regions
+      tags:
+      - regions
   /coupons/search:
     get:
       consumes:
@@ -392,6 +454,23 @@ paths:
       summary: Get coupons with filtering and pagination
       tags:
       - coupons
+  /coupons/tags:
+    get:
+      description: Retrieve a list of all tags
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.TagResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get all tags
+      tags:
+      - tags
   /coupons/vote/{dir}/{id}:
     post:
       description: Vote on a coupon by ID

@@ -1,6 +1,6 @@
 package models
 
 type CategoriesResponse struct {
-	Total int      `json:"total" example:"2"`
-	Data  []string `json:"data" example:[\"Electronics\",\"Clothing\"]`
+	Total      int      `json:"total" example:"2"`
+	Categories []string `json:"data" example:[\"Electronics\",\"Clothing\"]`
 }

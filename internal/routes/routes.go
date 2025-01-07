@@ -77,6 +77,15 @@ func SetupRoutes(app *fiber.App, db *sql.DB, rdb *redis.Client) {
 	api.Get("/coupons/merchants", defaultRateLimiter, func(ctx *fiber.Ctx) error {
 		return coupons.GetMerchants(ctx, couponRepo, rdb)
 	})
+	api.Get("/coupons/categories", defaultRateLimiter, func(ctx *fiber.Ctx) error {
+		return coupons.GetCategories(ctx, couponRepo, rdb)
+	})
+	api.Get("/coupons/tags", defaultRateLimiter, func(ctx *fiber.Ctx) error {
+		return coupons.GetTags(ctx, couponRepo, rdb)
+	})
+	api.Get("/coupons/regions", defaultRateLimiter, func(ctx *fiber.Ctx) error {
+		return coupons.GetRegions(ctx, couponRepo, rdb)
+	})
 	api.Post("/coupons/vote/:dir/:id", voteRateLimiter, singleVoteRateLimiter, func(ctx *fiber.Ctx) error {
 		return coupons.PostVote(ctx, rdb)
 	})

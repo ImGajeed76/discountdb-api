@@ -499,7 +499,7 @@ func (r *CouponRepository) GetMerchants(ctx context.Context) (*models.MerchantRe
 
 // --- Categories ---
 
-func (r *CouponRepository) GetCategories(ctx context.Context) ([]string, error) {
+func (r *CouponRepository) GetCategories(ctx context.Context) (*models.CategoriesResponse, error) {
 	query := `SELECT DISTINCT unnest(categories) FROM coupons ORDER BY 1;`
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
@@ -522,5 +522,76 @@ func (r *CouponRepository) GetCategories(ctx context.Context) ([]string, error) 
 		categories = append(categories, category)
 	}
 
-	return categories, nil
+	categoriesResponse := &models.CategoriesResponse{
+		Total:      len(categories),
+		Categories: categories,
+	}
+
+	return categoriesResponse, nil
+}
+
+// --- Tags ---
+
+func (r *CouponRepository) GetTags(ctx context.Context) (*models.TagResponse, error) {
+	query := `SELECT DISTINCT unnest(tags) FROM coupons ORDER BY 1;`
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Fatalf("Failed to close rows: %v", err)
+		}
+	}(rows)
+
+	var tags []string
+	for rows.Next() {
+		var tag string
+		err := rows.Scan(&tag)
+		if err != nil {
+			return nil, err
+		}
+		tags = append(tags, tag)
+	}
+
+	tagsResponse := &models.TagResponse{
+		Total: len(tags),
+		Tags:  tags,
+	}
+
+	return tagsResponse, nil
+}
+
+// --- Regions ---
+
+func (r *CouponRepository) GetRegions(ctx context.Context) (*models.RegionResponse, error) {
+	query := `SELECT DISTINCT unnest(regions) FROM coupons ORDER BY 1;`
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Fatalf("Failed to close rows: %v", err)
+		}
+	}(rows)
+
+	var regions []string
+	for rows.Next() {
+		var region string
+		err := rows.Scan(&region)
+		if err != nil {
+			return nil, err
+		}
+		regions = append(regions, region)
+	}
+
+	regionsResponse := &models.RegionResponse{
+		Total:   len(regions),
+		Regions: regions,
+	}
+
+	return regionsResponse, nil
 }
