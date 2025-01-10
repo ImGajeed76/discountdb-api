@@ -12,26 +12,25 @@ Backend API service for DiscountDB - the open-source coupon and discount databas
 ## Prerequisites
 
 - Go 1.21+
-- Redis
-- PostgreSQL
+- Docker and Docker Compose
 - [swag](https://github.com/swaggo/swag) (for API documentation)
 
-## Getting Started 🔧
+## Getting Started 🛠️
 
-1. Clone the repository
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/ImGajeed76/discountdb-api.git
 cd discountdb-api
 ```
 
-2. Install dependencies
+### 2. Install dependencies
 
 ```bash
 go mod download
 ```
 
-3. Set up environment variables
+### 3. Set up environment variables
 
 ```bash
 cp .env.example .env
@@ -42,7 +41,7 @@ Configure the following in your `.env`:
 - PostgreSQL connection details
 - Redis connection details
 
-4. Generate Swagger documentation
+### 4. Generate Swagger documentation
 
 ```bash
 # Install swag if you haven't already
@@ -53,11 +52,40 @@ go install github.com/swaggo/swag/cmd/swag@latest
 swag init -g ./cmd/api/main.go
 ```
 
-5. Run the API
+### 5. Run the API using Docker Compose
+
+To simplify the setup of Redis and PostgreSQL, use the provided `docker-compose.yml` file:
+
+1. Start the services using Docker Compose:
+
+```bash
+docker-compose up -d
+```
+
+This will spin up Redis and PostgreSQL containers.
+
+### 6. Run the API locally
+
+Once Redis and PostgreSQL are running via Docker Compose, you can run the API:
 
 ```bash
 go run cmd/api/main.go
 ```
+
+## Troubleshooting
+
+- Ensure Docker is running and the containers are healthy (`docker ps` to check their status).
+- If ports 5432 or 6379 are already in use, update the `docker-compose.yml` file to use different host ports.
+
+## Stopping the Docker Services
+
+To stop the services:
+
+```bash
+docker-compose down
+```
+
+This will stop and remove the containers.
 
 ## License 📜
 
