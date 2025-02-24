@@ -7,7 +7,7 @@ containerized PostgreSQL and Redis services.
 
 - [Git](https://git-scm.com/downloads)
 - [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/)
-- [Go](https://golang.org/doc/install) (1.16 or later)
+- [Go](https://golang.org/doc/install) (1.24.0 or later)
 
 ## Setup Steps
 
