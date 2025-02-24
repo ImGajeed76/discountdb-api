@@ -38,7 +38,7 @@ DB_PORT = 25060
 DB_DATABASE = discountdb
 DB_SSL_MODE = disable
 
-REDIS_USERNAME = redis
+REDIS_USERNAME = default
 REDIS_PASSWORD = root
 REDIS_HOST = localhost
 REDIS_PORT = 25061
