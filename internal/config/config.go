@@ -17,6 +17,7 @@ type Config struct {
 	REDISPort     string
 	REDISUser     string
 	REDISPassword string
+	REDISUseTLS   bool
 }
 
 func LoadConfig() (*Config, error) {
@@ -34,6 +35,7 @@ func LoadConfig() (*Config, error) {
 		REDISPort:     os.Getenv("REDIS_PORT"),
 		REDISUser:     os.Getenv("REDIS_USERNAME"),
 		REDISPassword: os.Getenv("REDIS_PASSWORD"),
+		REDISUseTLS:   os.Getenv("REDIS_USE_TLS") == "true",
 	}
 
 	return config, nil

@@ -1,28 +1,35 @@
 services:
   postgres:
-    image: postgres:latest
-    container_name: postgres_container
+    image: postgres:16
+    container_name: postgres
     environment:
-      POSTGRES_USER: REPLACE_WITH_YOUR_USERNAME
-      POSTGRES_PASSWORD: REPLACE_WITH_YOUR_PASSWORD
-      POSTGRES_DB: REPLACE_WITH_YOUR_DATABASE_NAME
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: discountdb
     ports:
-      - "5432:5432"
+      - "25060:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - backend
+      - app-network
+    restart: unless-stopped
 
   redis:
-    image: redis:latest
-    container_name: redis_container
+    image: redis:7
+    container_name: redis
+    command: redis-server --requirepass root
     ports:
-      - "6379:6379"
+      - "25061:6379"
+    volumes:
+      - redis_data:/data
     networks:
-      - backend
+      - app-network
+    restart: unless-stopped
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
-  backend:
+  app-network:
+    driver: bridge

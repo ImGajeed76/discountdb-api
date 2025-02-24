@@ -10,6 +10,13 @@ import (
 )
 
 func NewRedisClient(cfg *config.Config) (*redis.Client, error) {
+	var tlsConfig *tls.Config
+	if cfg.REDISUseTLS {
+		tlsConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+	}
+
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", cfg.REDISHost, cfg.REDISPort),
 		Username: cfg.REDISUser,
@@ -33,9 +40,7 @@ func NewRedisClient(cfg *config.Config) (*redis.Client, error) {
 		MaxRetryBackoff: 512 * time.Millisecond,
 
 		// TLS Config
-		TLSConfig: &tls.Config{
-			MinVersion: tls.VersionTLS12,
-		},
+		TLSConfig: tlsConfig,
 	})
 
 	// Test the connection
