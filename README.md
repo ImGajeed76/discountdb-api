@@ -94,6 +94,7 @@ This project is licensed under the GNU General Public License v3 (GPL-3.0). See 
 ## Related Projects 🔗
 
 - [DiscountDB Frontend](https://github.com/ImGajeed76/discountdb) - Main repository containing the SvelteKit frontend
+- [Check it out on my website](https://oseifert.ch/projects/discountdb-api-9117)
 
 ## Contributing 🤝
 
