@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/gofiber/contrib/swagger v1.2.0
-	github.com/gofiber/fiber/v2 v2.52.6
+	github.com/gofiber/fiber/v2 v2.52.11
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
 	github.com/redis/go-redis/v9 v9.7.0
